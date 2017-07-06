@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>I don't believe in ghosts!</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width" >
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache"> 
+    <link rel="stylesheet" type="text/css" href="./stylesheets/style.css">
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-78499026-4', 'auto');
+      ga('send', 'pageview');
+    </script>
+    <script src='https://cdn.rawgit.com/phi-jp/phina.js/v0.2.0/build/phina.js'></script>
+    <script type="text/javascript" src="./javascripts/Global.js"></script>
+    <script type="text/javascript" src="./javascripts/Background.js"></script>
+    <script type="text/javascript" src="./javascripts/Shadow.js"></script>
+    <script type="text/javascript" src="./javascripts/Player.js"></script>
+    <script type="text/javascript" src="./javascripts/Enemy.js"></script>
+    <script type="text/javascript" src="./javascripts/Filter.js"></script>
+    <script type="text/javascript" src="./javascripts/Layer.js"></script>
+    <script type="text/javascript" src="./javascripts/TitleScene.js"></script>
+    <script type="text/javascript" src="./javascripts/MainScene.js"></script>
+    <script type="text/javascript" src="./javascripts/GameOverScene.js"></script>
+    <script type="text/javascript">
+      phina.main(function () {
+        var app = GameApp({
+          query: "#game",
+          width: SCREEN_WIDTH,
+          height: SCREEN_HEIGHT,
+          assets: ASSETS,
+          scenes: SCENES,
+          title: TITLE,
+          fit: false
+        });
+        app.run();
+      });
+    </script>
+    
+    <!-- ここからFirebase、Vue、Twitter関連JavaScript -->
+    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
+    <script src="https://jp.vuejs.org/js/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyD3R7Z5bRKgV37SswLHtuPVG2V8kAAt8u8",
+        authDomain: "twitterauthtest.firebaseapp.com",
+        databaseURL: "https://twitterauthtest.firebaseio.com",
+        projectId: "twitterauthtest",
+        storageBucket: "",
+        messagingSenderId: "446931635963"
+      };
+      firebase.initializeApp(config);
+    </script>
+    
+  </head>
+  <body>
+    <div id="main">
+      <canvas id='game'></canvas><br /><br />
+        <p>I don't believe in ghosts!</p>
+      【遊び方】<br />
+      <ul>
+        <li>クリックすると目を閉じます。</li>
+        <li>おばけに当たると呪われます、目を閉じてやりすごしましょう。</li>
+        <li>目を開けていると勇気(Brave)が増えます、目を閉じると減ります。</li>
+      </ul>
+      <br />
+      <br />
+      <a href="https://github.com/smison/obake" target="_blank">smison/obake</a>
+      <br />
+      <a href="https://twitter.com/smison" target="_blank">@smison</a>
+      <br />
+      <br />
+      <a href="https://twitter.com/share" class="twitter-share-button"{count}>Tweet</a>
+      <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      <br />
+      <br />
+      powered by <a href="http://phinajs.com/" target="_blank">phina.js</a>
+    </div>
+    
+    <!-- VueJS用 -->
+    <div id="app">
+      <div v-if="token.length <= 0">
+        <button v-on:click="authButtonClick">認証へ</button>
+      </div>
+      <div v-else>
+        <input v-model="message" placeholder="edit me">
+        <button v-on:click="twitterButtonClick">ツイート</button>
+      </div>
+    </div>
+  </body>
+  <script>
+    var example1 = new Vue({
+      el: '#app',
+      data: function() {
+        return({
+          token: '',
+          secret: '',
+          message: '',
+          user: null,
+        });
+      },
+      methods: {
+        twitterButtonClick: function() {
+          // キャンバスのデータをPNGで取得
+          // https://syncer.jp/javascript-reference/canvas-todataurl
+          var _dataURI = document.getElementById("game").toDataURL();
+
+          // ajaxによる通信
+          axios.post('https://intense-badlands-24979.herokuapp.com/statuses/update', {
+              token: this.token,
+              secret: this.secret,
+              message: this.message,
+              imageData: _dataURI,
+          })
+          .then(function (response) {
+              console.log(response);
+          })
+          .catch(function (error) {
+              console.log(error);
+          });
+        },
+        authButtonClick: function() {
+          var _self = this;
+          var provider = new firebase.auth.TwitterAuthProvider();
+          firebase.auth().signInWithPopup(provider).then(function(result) {
+            // This gives you a the Twitter OAuth 1.0 Access Token and Secret.
+            // You can use these server side with your app's credentials to access the Twitter API.
+            _self.token = result.credential.accessToken;
+            _self.secret = result.credential.secret;
+            // The signed-in user info.
+            _self.user = result.user;
+            // ...
+            console.log(result);
+          }).catch(function(error) {
+            // Handle Errors here.
+            var errorCode = error.code;
+            var errorMessage = error.message;
+            // The email of the user's account used.
+            var email = error.email;
+            // The firebase.auth.AuthCredential type that was used.
+            var credential = error.credential;
+            // ...
+            console.log(error);
+          });
+        }
+      },
+    });
+  </script>
+</html>

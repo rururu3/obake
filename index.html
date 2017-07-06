@@ -42,6 +42,24 @@
         app.run();
       });
     </script>
+    
+    <!-- ここからFirebase、Vue、Twitter関連JavaScript -->
+    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
+    <script src="https://jp.vuejs.org/js/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyD3R7Z5bRKgV37SswLHtuPVG2V8kAAt8u8",
+        authDomain: "twitterauthtest.firebaseapp.com",
+        databaseURL: "https://twitterauthtest.firebaseio.com",
+        projectId: "twitterauthtest",
+        storageBucket: "",
+        messagingSenderId: "446931635963"
+      };
+      firebase.initializeApp(config);
+    </script>
+    
   </head>
   <body>
     <div id="main">
@@ -66,5 +84,74 @@
       <br />
       powered by <a href="http://phinajs.com/" target="_blank">phina.js</a>
     </div>
+    
+    <!-- VueJS用 -->
+    <div id="app">
+      <div v-if="token.length <= 0">
+        <button v-on:click="authButtonClick">認証へ</button>
+      </div>
+      <div v-else>
+        <input v-model="message" placeholder="edit me">
+        <button v-on:click="twitterButtonClick">ツイート</button>
+      </div>
+    </div>
   </body>
+  <script>
+    var example1 = new Vue({
+      el: '#app',
+      data: function() {
+        return({
+          token: '',
+          secret: '',
+          message: '',
+          user: null,
+        });
+      },
+      methods: {
+        twitterButtonClick: function() {
+          // キャンバスのデータをPNGで取得
+          // https://syncer.jp/javascript-reference/canvas-todataurl
+          var _dataURI = document.getElementById("game").toDataURL();
+
+          // ajaxによる通信
+          axios.post('https://intense-badlands-24979.herokuapp.com/statuses/update', {
+              token: this.token,
+              secret: this.secret,
+              message: this.message,
+              imageData: _dataURI,
+          })
+          .then(function (response) {
+              console.log(response);
+          })
+          .catch(function (error) {
+              console.log(error);
+          });
+        },
+        authButtonClick: function() {
+          var _self = this;
+          var provider = new firebase.auth.TwitterAuthProvider();
+          firebase.auth().signInWithPopup(provider).then(function(result) {
+            // This gives you a the Twitter OAuth 1.0 Access Token and Secret.
+            // You can use these server side with your app's credentials to access the Twitter API.
+            _self.token = result.credential.accessToken;
+            _self.secret = result.credential.secret;
+            // The signed-in user info.
+            _self.user = result.user;
+            // ...
+            console.log(result);
+          }).catch(function(error) {
+            // Handle Errors here.
+            var errorCode = error.code;
+            var errorMessage = error.message;
+            // The email of the user's account used.
+            var email = error.email;
+            // The firebase.auth.AuthCredential type that was used.
+            var credential = error.credential;
+            // ...
+            console.log(error);
+          });
+        }
+      },
+    });
+  </script>
 </html>
